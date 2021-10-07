@@ -1,3 +1,4 @@
+import random
 
 from mcts_node import MCTSNode
 from random import choice
@@ -18,6 +19,7 @@ def traverse_nodes(node, board, state, identity):
     Returns:        A node from which the next stage of the search can proceed.
 
     """
+
     pass
     # Hint: return leaf_node
 
@@ -33,9 +35,13 @@ def expand_leaf(node, board, state):
     Returns:    The added child node.
 
     """
-    pass
-    # Hint: return new_node
-
+    # loop through all possible states for node
+    current_state = state
+    possible_actions = board.legal_actions(current_state)
+    action_to_take = possible_actions[random.randint(0, len(possible_actions) - 1)]
+    new_node = (node, action_to_take, [])
+    node.child_nodes.append(new_node)
+    return new_node
 
 def rollout(board, state):
     """ Given the state of the game, the rollout plays out the remainder randomly.
@@ -45,6 +51,13 @@ def rollout(board, state):
         state:  The state of the game.
 
     """
+    current_state = state
+    #play random move until an end state reached
+    while not board.is_ended(current_state):
+        possible_actions = board.legal_actions(current_state)
+        action_to_take = possible_actions[random.randint(0, len(possible_actions)-1)]
+        current_state = board.next_state(current_state, action_to_take)
+    #current state at this point will be an ending state
     pass
 
 
@@ -70,6 +83,7 @@ def think(board, state):
 
     """
     identity_of_bot = board.current_player(state)
+    print(board.legal_actions(state))
     root_node = MCTSNode(parent=None, parent_action=None, action_list=board.legal_actions(state))
 
     for step in range(num_nodes):
