@@ -69,6 +69,9 @@ def backpropagate(node, won):
         won:    An indicator of whether the bot won or lost the game.
 
     """
+    current_node = node
+    while current_node is not None:
+        current_node.wins += won
     pass
 
 
