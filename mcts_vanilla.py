@@ -23,11 +23,14 @@ def traverse_nodes(node, board, state, identity):
     #UCT = wi/ni + c(sqrt(ln t/ni))
     #append all possible actions for current node
     for action in current.untried_actions:
-        current.child_nodes.append(board.next_state(state, action))
+        new_child = MCTSNode(current, action, board.legal_actions(board.next_state(state, action))) #need to get all actions
+        current.child_nodes.append(new_child)
     # calculate UCT of nodes
     greatest_child = None
     greatest_UCT = 0
     for child in current.child_nodes:
+        if child.visits is not 0:
+            expand_leaf(child, board, state)
         current_UCT = child.wins/child.visits + explore_faction*(sqrt(log(current.visits)/child.visits))
         if current_UCT > greatest_UCT:
             greatest_child = child
