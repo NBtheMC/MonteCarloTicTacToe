@@ -20,23 +20,21 @@ def traverse_nodes(node, board, state, identity):
 
     """
     current = node
-
-    #While the current is not a leaf node (Has no children)
-    while(current.child_nodes):
-        #Choose a random child
-        chooseNode = random.choice(list(current.child_nodes.values()))
-        current = chooseNode
-    #pass
-    return current
-
-    #expand
-    new_node = expand_leaf(current, board, state)
-
-    #rollout
-    
-
-    #back_propagate
-
+    #UCT = wi/ni + c(sqrt(ln t/ni))
+    #append all possible actions for current node
+    for action in current.untried_actions:
+        current.child_nodes.append(board.next_state(state, action))
+    # calculate UCT of nodes
+    greatest_child = None
+    greatest_UCT = 0
+    for child in current.child_nodes:
+        current_UCT = child.wins/child.visits + explore_faction*(sqrt(log(current.visits)/child.visits))
+        if current_UCT > greatest_UCT:
+            greatest_child = child
+            greatest_UCT = current_UCT
+    #by this point have visited all nodes and have a greatest
+    rollout(board, greatest_child)
+    traverse_nodes(node, board, state, identity) #recursive parts
 
     # Hint: return leaf_node
 
@@ -87,8 +85,9 @@ def backpropagate(node, won):
 
     """
     current_node = node
-    while current_node is not None:
+    while current_node:
         current_node.wins += won
+        current_node = current_node.parent
     pass
 
 
