@@ -19,8 +19,25 @@ def traverse_nodes(node, board, state, identity):
     Returns:        A node from which the next stage of the search can proceed.
 
     """
+    current = node
 
-    pass
+    #While the current is not a leaf node (Has no children)
+    while(current.child_nodes):
+        #Choose a random child
+        chooseNode = random.choice(list(current.child_nodes.values()))
+        current = chooseNode
+    #pass
+    return current
+
+    #expand
+    new_node = expand_leaf(current, board, state)
+
+    #rollout
+    
+
+    #back_propagate
+
+
     # Hint: return leaf_node
 
 
