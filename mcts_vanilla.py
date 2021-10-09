@@ -37,9 +37,10 @@ def traverse_nodes(node, board, state, identity):
             greatest_child = child
             greatest_UCT = current_UCT
     #by this point have visited all nodes and have a greatest
-    return(greatest_child)
-    # Hint: return leaf_node
-
+    if greatest_child.visits == 0:
+        return traverse_nodes(greatest_child, board, board.next_state(greatest_child.parent_action), identity)
+    else:
+        return greatest_child
 
 def expand_leaf(node, board, state):
     """ Adds a new leaf to the tree by creating a new child node for the given node.
