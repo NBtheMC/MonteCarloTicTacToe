@@ -21,26 +21,26 @@ def traverse_nodes(node, board, state, identity):
 
     """
     current = node
-    #UCT = wi/ni + c(sqrt(ln t/ni))
-    #append all possible actions for current node
-    for action in current.untried_actions:
-        new_child = MCTSNode(current, action, board.legal_actions(board.next_state(state, action))) #need to get all actions
-        current.child_nodes[action] = new_child
+    if len(current.child_nodes) == 0: #if no children, then add a leaf
+        expand_leaf(current, board, state)
+        return current
     # calculate UCT of nodes
     greatest_child = None
     greatest_UCT = 0
     for child in current.child_nodes.values():
-        if child.visits == 0:
+        if child.visits == 0: #if not visited want to rollout this one
             return child
-        elif child.visits != 0:
+        elif child.visits != 0: #expand leaf node
             expand_leaf(child, board, state)
+        # UCT = wi/ni + c(sqrt(ln t/ni))
         current_UCT = child.wins/child.visits + explore_faction*(sqrt(log(current.visits)/child.visits))
         if current_UCT > greatest_UCT:
             greatest_child = child
             greatest_UCT = current_UCT
     #by this point have visited all nodes and have a greatest
-    if greatest_child.visits == 0:
-        return traverse_nodes(greatest_child, board, board.next_state(greatest_child.parent_action), identity)
+    if greatest_child.visits > 0:
+        next_state = board.next_state(state, greatest_child.parent_action)
+        return traverse_nodes(greatest_child, board, next_state, identity)
     else:
         return greatest_child
 
@@ -60,8 +60,8 @@ def expand_leaf(node, board, state):
     current_state = state
     possible_actions = board.legal_actions(current_state)
     action_to_take = possible_actions[random.randint(0, len(possible_actions) - 1)]
-    new_node = (node, action_to_take, [])
-    node.child_nodes.append(new_node)
+    new_node = MCTSNode(node, action_to_take, [])
+    node.child_nodes[action_to_take] = new_node
     return new_node
 
 def rollout(board, state):
@@ -98,6 +98,18 @@ def backpropagate(node, won):
         current_node = current_node.parent
     pass
 
+def best_action(node, board, state, identity):
+    greatest_UCT = 0
+    current_UCT = 0
+    greatest_child = None
+    for child in node.child_nodes.values():
+        # UCT = wi/ni + c(sqrt(ln t/ni))
+        current_UCT = child.wins/child.visits + explore_faction*(sqrt(log(node.visits)/child.visits))
+        if current_UCT > greatest_UCT:
+            greatest_child = child
+            greatest_UCT = current_UCT
+    return greatest_child.parent_action
+
 
 def think(board, state):
     """ Performs MCTS by sampling games and calling the appropriate functions to construct the game tree.
@@ -115,24 +127,25 @@ def think(board, state):
     print(board.legal_actions(state))
     root_node = MCTSNode(parent=None, parent_action=None, action_list=board.legal_actions(state))
 
-    for step in range(num_nodes):
-        # Copy the game for sampling a playthrough
-        sampled_game = state
+    # Copy the game for sampling a playthrough
+    sampled_game = state
+    # Start at root
+    node = root_node
 
-        # Start at root
-        node = root_node
-
-        # Do MCTS - This is all you!
-        timer = time.time() + 1
-        #while tree size, eventually replace with timer
-        tree_size = 1
-        while tree_size < 1000:
-            leaf = traverse_nodes(node, board, state, identity_of_bot)
-            simulated = rollout(board, state)
-            backpropagate(leaf, board.win_values(simulated)[identity_of_bot]) #need to update wins correctly
-
+    # Do MCTS - This is all you!
+    timer = time.time() + 1
+    #while tree size, eventually replace with timer
+    total_score = 0
+    tree_size = 1
+    while tree_size < num_nodes:
+        leaf = traverse_nodes(node, board, state, identity_of_bot)
+        simulated = rollout(board, state)
+        score_to_update = board.win_values(simulated)[identity_of_bot]
+        total_score += score_to_update
+        backpropagate(leaf, score_to_update) #need to update wins correctly
+        tree_size += 1
     # Return an action, typically the most frequently used action (from the root) or the action with the best
     # estimated win rate.
-    returned_action = traverse_nodes(node, board, state, identity_of_bot).parent_action
-    print(returned_action)
-    return returned_action
+    print(total_score/tree_size)
+    action_to_take = best_action(node, board, state, identity_of_bot)
+    return action_to_take
