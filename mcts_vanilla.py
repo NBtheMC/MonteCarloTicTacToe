@@ -25,12 +25,14 @@ def traverse_nodes(node, board, state, identity):
     #append all possible actions for current node
     for action in current.untried_actions:
         new_child = MCTSNode(current, action, board.legal_actions(board.next_state(state, action))) #need to get all actions
-        current.child_nodes.append(new_child)
+        current.child_nodes[action] = new_child
     # calculate UCT of nodes
     greatest_child = None
     greatest_UCT = 0
-    for child in current.child_nodes:
-        if child.visits is not 0:
+    for child in current.child_nodes.values():
+        if child.visits == 0:
+            return child
+        elif child.visits != 0:
             expand_leaf(child, board, state)
         current_UCT = child.wins/child.visits + explore_faction*(sqrt(log(current.visits)/child.visits))
         if current_UCT > greatest_UCT:
@@ -89,6 +91,7 @@ def backpropagate(node, won):
         won:    An indicator of whether the bot won or lost the game.
 
     """
+    #Update win scores
     current_node = node
     while current_node:
         current_node.wins += won
@@ -118,15 +121,16 @@ def think(board, state):
         node = root_node
 
         # Do MCTS - This is all you!
-        #while time
         timer = time.time() + 1
-        #while tree size
+        #while tree size, eventually replace with timer
         tree_size = 1
         while tree_size < 1000:
             leaf = traverse_nodes(node, board, state, identity_of_bot)
-            simulated = rollout(leaf)
-            backpropagate(leaf, simulated)
+            simulated = rollout(board, leaf)
+            backpropagate(leaf, board.win_values(simulated)) #need to update wins correctly
 
     # Return an action, typically the most frequently used action (from the root) or the action with the best
     # estimated win rate.
-    return traverse_nodes(node, board, state, identity_of_bot).parent_action
+    returned_action = traverse_nodes(node, board, state, identity_of_bot).parent_action
+    print(returned_action)
+    return returned_action
