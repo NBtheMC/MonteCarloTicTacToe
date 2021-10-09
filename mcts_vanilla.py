@@ -72,8 +72,7 @@ def rollout(board, state):
         state:  The state of the game.
 
     """
-    current_state = state
-    print(current_state)
+    current_state = state #state
     #play random move until an end state reached
     while not board.is_ended(current_state):
         possible_actions = board.legal_actions(current_state)
@@ -95,6 +94,7 @@ def backpropagate(node, won):
     current_node = node
     while current_node:
         current_node.wins += won
+        current_node.visits += 1
         current_node = current_node.parent
     pass
 
@@ -110,6 +110,8 @@ def think(board, state):
 
     """
     identity_of_bot = board.current_player(state)
+    print("identity_of_bot")
+    print(identity_of_bot)
     print(board.legal_actions(state))
     root_node = MCTSNode(parent=None, parent_action=None, action_list=board.legal_actions(state))
 
@@ -126,8 +128,8 @@ def think(board, state):
         tree_size = 1
         while tree_size < 1000:
             leaf = traverse_nodes(node, board, state, identity_of_bot)
-            simulated = rollout(board, leaf)
-            backpropagate(leaf, board.win_values(simulated)) #need to update wins correctly
+            simulated = rollout(board, state)
+            backpropagate(leaf, board.win_values(simulated)[identity_of_bot]) #need to update wins correctly
 
     # Return an action, typically the most frequently used action (from the root) or the action with the best
     # estimated win rate.
