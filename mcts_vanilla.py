@@ -1,4 +1,5 @@
 import random
+import time
 
 from mcts_node import MCTSNode
 from random import choice
@@ -36,9 +37,7 @@ def traverse_nodes(node, board, state, identity):
             greatest_child = child
             greatest_UCT = current_UCT
     #by this point have visited all nodes and have a greatest
-    rollout(board, greatest_child)
-    traverse_nodes(node, board, state, identity) #recursive parts
-
+    return(greatest_child)
     # Hint: return leaf_node
 
 
@@ -53,7 +52,8 @@ def expand_leaf(node, board, state):
     Returns:    The added child node.
 
     """
-    # loop through all possible states for node
+
+    #check too see if nodes are filled
     current_state = state
     possible_actions = board.legal_actions(current_state)
     action_to_take = possible_actions[random.randint(0, len(possible_actions) - 1)]
@@ -70,13 +70,14 @@ def rollout(board, state):
 
     """
     current_state = state
+    print(current_state)
     #play random move until an end state reached
     while not board.is_ended(current_state):
         possible_actions = board.legal_actions(current_state)
         action_to_take = possible_actions[random.randint(0, len(possible_actions)-1)]
         current_state = board.next_state(current_state, action_to_take)
     #current state at this point will be an ending state
-    pass
+    return current_state
 
 
 def backpropagate(node, won):
@@ -116,7 +117,15 @@ def think(board, state):
         node = root_node
 
         # Do MCTS - This is all you!
+        #while time
+        timer = time.time() + 1
+        #while tree size
+        tree_size = 1
+        while tree_size < 1000:
+            leaf = traverse_nodes(node, board, state, identity_of_bot)
+            simulated = rollout(leaf)
+            backpropagate(leaf, simulated)
 
     # Return an action, typically the most frequently used action (from the root) or the action with the best
     # estimated win rate.
-    return None
+    return traverse_nodes(node, board, state, identity_of_bot).parent_action
