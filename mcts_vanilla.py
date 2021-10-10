@@ -21,8 +21,8 @@ def traverse_nodes(node, board, state, identity):
 
     """
     current = node
-    if len(current.child_nodes) == 0: #if no children, then add a leaf
-        expand_leaf(current, board, state)
+    print("Visits ", current.visits)
+    if len(current.child_nodes) == 0 and current.visits == 0: #if no children, then add a leaf
         return current
     # calculate UCT of nodes
     greatest_child = None
@@ -42,6 +42,7 @@ def traverse_nodes(node, board, state, identity):
         next_state = board.next_state(state, greatest_child.parent_action)
         return traverse_nodes(greatest_child, board, next_state, identity)
     else:
+        print("Expanding ", greatest_child)
         return greatest_child
 
 def expand_leaf(node, board, state):
@@ -59,9 +60,10 @@ def expand_leaf(node, board, state):
     #check too see if nodes are filled
     current_state = state
     possible_actions = board.legal_actions(current_state)
-    action_to_take = possible_actions[random.randint(0, len(possible_actions) - 1)]
-    new_node = MCTSNode(node, action_to_take, [])
-    node.child_nodes[action_to_take] = new_node
+    #print("Possible:", possible_actions)
+    for action in possible_actions:
+        new_node = MCTSNode(node, action, board.legal_actions(board.next_state(state, action)))
+    #print("Action:", action_to_take)
     return new_node
 
 def rollout(board, state):
@@ -122,9 +124,9 @@ def think(board, state):
 
     """
     identity_of_bot = board.current_player(state)
-    print("identity_of_bot")
-    print(identity_of_bot)
-    print(board.legal_actions(state))
+    # print("identity_of_bot")
+    # print(identity_of_bot)
+    #print(board.legal_actions(state))
     root_node = MCTSNode(parent=None, parent_action=None, action_list=board.legal_actions(state))
 
     # Copy the game for sampling a playthrough
@@ -146,6 +148,6 @@ def think(board, state):
         tree_size += 1
     # Return an action, typically the most frequently used action (from the root) or the action with the best
     # estimated win rate.
-    print(total_score/tree_size)
+    #print(total_score/tree_size)
     action_to_take = best_action(node, board, state, identity_of_bot)
     return action_to_take
