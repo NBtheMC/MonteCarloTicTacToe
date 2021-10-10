@@ -1,5 +1,4 @@
 import random
-import time
 
 from mcts_node import MCTSNode
 from random import choice
@@ -71,15 +70,6 @@ def expand_leaf(node, board, state):
     Returns:    The added child node.
 
     """
-
-    # #check too see if nodes are filled
-    # current_state = state
-    # possible_actions = board.legal_actions(current_state)
-    # #print("Possible:", possible_actions)
-    # for action in possible_actions:
-    #     new_node = MCTSNode(node, action, board.legal_actions(board.next_state(state, action)))
-    #     node.child_nodes[action] = new_node
-    # #print("Action:", action_to_take)
     new_node = MCTSNode(node, None, None)
     return new_node
     
@@ -96,7 +86,7 @@ def rollout(board, state):
     #play random move until an end state reached
     while not board.is_ended(current_state):
         possible_actions = board.legal_actions(current_state)
-        action_to_take = possible_actions[random.randint(0, len(possible_actions)-1)]
+        action_to_take = random.choice(possible_actions)
         current_state = board.next_state(current_state, action_to_take)
     #current state at this point will be an ending state
     return current_state
@@ -153,7 +143,6 @@ def think(board, state):
     node = root_node
 
     # Do MCTS - This is all you!
-    timer = time.time() + 1
     #while tree size, eventually replace with timer
     total_score = 0
     tree_size = 1
