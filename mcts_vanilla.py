@@ -23,13 +23,14 @@ def traverse_nodes(node, board, state, identity):
     current = node
     #print("Visits ", current.visits)
     if current.visits == 0: #if no children, then add a leaf
-        #print("in if")
+        #print("Child actions: ")
         for action in current.untried_actions:
             next_state = board.next_state(state, action)
             expanded_leaf = expand_leaf(current, board, next_state)
             expanded_leaf.parent_action = action
             expanded_leaf.untried_actions = board.legal_actions(next_state)
             node.child_nodes[action] = expanded_leaf
+            #print("Action: ", action)
     if len(current.child_nodes) == 0:
         return current
     # calculate UCT of nodes
@@ -156,6 +157,7 @@ def think(board, state):
     while tree_size < num_nodes:
         #print(tree_size)
         leaf = traverse_nodes(node, board, state, identity_of_bot)
+        next_state = board.next_state(state, leaf.parent_action)
         simulated = rollout(board, state)
         score_to_update = board.win_values(simulated)[identity_of_bot]
         total_score += score_to_update
