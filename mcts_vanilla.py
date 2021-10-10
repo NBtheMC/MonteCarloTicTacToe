@@ -41,13 +41,16 @@ def traverse_nodes(node, board, state, identity):
         if c.visits == 0: #if not visited want to rollout this one
             #print("return")
             return c
-
     #Using UCT to figure out which child to continue with
     for child in current.child_nodes.values():
         # if child.visits != 0: #expand leaf node
         #     expand_leaf(child, board, state)
         # UCT = wi/ni + c(sqrt(ln t/ni))
-        current_UCT = child.wins/child.visits + explore_faction*(sqrt(log(current.visits)/child.visits))
+        # calculate UCT based on identity
+        if identity != board.current_player(state):
+            current_UCT = child.wins/child.visits + explore_faction * (sqrt(log(current.visits) / child.visits))
+        else:
+            current_UCT = (1-(child.wins/child.visits)) + explore_faction * (sqrt(log(current.visits) / child.visits))
         if current_UCT > greatest_UCT:
             greatest_child = child
             greatest_UCT = current_UCT
