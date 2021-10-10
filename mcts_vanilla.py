@@ -21,29 +21,43 @@ def traverse_nodes(node, board, state, identity):
 
     """
     current = node
-    print("Visits ", current.visits)
-    if len(current.child_nodes) == 0 and current.visits == 0: #if no children, then add a leaf
-        return current
+    #print("Visits ", current.visits)
+    if len(current.child_nodes) == 0 or current.visits == 0: #if no children, then add a leaf
+        #print("in if")
+        for action in current.untried_actions:
+            next_state = board.next_state(state, action)
+            expanded_leaf = expand_leaf(current, board, next_state)
+            expanded_leaf.parent_action = action
+            expanded_leaf.untried_actions = board.legal_actions(next_state)
+            node.child_nodes[action] = expanded_leaf
+            end_state = rollout(board, next_state)
+            backpropagate(expanded_leaf, board.win_values(end_state)[identity])
+        #no return
+        #return current
     # calculate UCT of nodes
     greatest_child = None
     greatest_UCT = 0
+
+    #print("CHILD NODES: ", current.child_nodes.keys())
+    #Checking for nonvisited children
+    for c in current.child_nodes.values():
+        if c.visits == 0: #if not visited want to rollout this one
+            #print("return")
+            return c
+    #Using UCT to figure out which child to continue with
     for child in current.child_nodes.values():
-        if child.visits == 0: #if not visited want to rollout this one
-            return child
-        elif child.visits != 0: #expand leaf node
-            expand_leaf(child, board, state)
+        # if child.visits != 0: #expand leaf node
+        #     expand_leaf(child, board, state)
         # UCT = wi/ni + c(sqrt(ln t/ni))
         current_UCT = child.wins/child.visits + explore_faction*(sqrt(log(current.visits)/child.visits))
         if current_UCT > greatest_UCT:
             greatest_child = child
             greatest_UCT = current_UCT
     #by this point have visited all nodes and have a greatest
-    if greatest_child.visits > 0:
-        next_state = board.next_state(state, greatest_child.parent_action)
-        return traverse_nodes(greatest_child, board, next_state, identity)
-    else:
-        print("Expanding ", greatest_child)
-        return greatest_child
+    # if greatest_child.visits > 0:
+    next_state = board.next_state(state, greatest_child.parent_action)
+    return traverse_nodes(greatest_child, board, next_state, identity)
+    
 
 def expand_leaf(node, board, state):
     """ Adds a new leaf to the tree by creating a new child node for the given node.
@@ -57,14 +71,17 @@ def expand_leaf(node, board, state):
 
     """
 
-    #check too see if nodes are filled
-    current_state = state
-    possible_actions = board.legal_actions(current_state)
-    #print("Possible:", possible_actions)
-    for action in possible_actions:
-        new_node = MCTSNode(node, action, board.legal_actions(board.next_state(state, action)))
-    #print("Action:", action_to_take)
+    # #check too see if nodes are filled
+    # current_state = state
+    # possible_actions = board.legal_actions(current_state)
+    # #print("Possible:", possible_actions)
+    # for action in possible_actions:
+    #     new_node = MCTSNode(node, action, board.legal_actions(board.next_state(state, action)))
+    #     node.child_nodes[action] = new_node
+    # #print("Action:", action_to_take)
+    new_node = MCTSNode(node, None, None)
     return new_node
+    
 
 def rollout(board, state):
     """ Given the state of the game, the rollout plays out the remainder randomly.
@@ -140,6 +157,7 @@ def think(board, state):
     total_score = 0
     tree_size = 1
     while tree_size < num_nodes:
+        #print(tree_size)
         leaf = traverse_nodes(node, board, state, identity_of_bot)
         simulated = rollout(board, state)
         score_to_update = board.win_values(simulated)[identity_of_bot]
