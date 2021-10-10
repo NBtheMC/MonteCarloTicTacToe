@@ -22,7 +22,7 @@ def traverse_nodes(node, board, state, identity):
     """
     current = node
     #print("Visits ", current.visits)
-    if len(current.child_nodes) == 0 or current.visits == 0: #if no children, then add a leaf
+    if current.visits == 0: #if no children, then add a leaf
         #print("in if")
         for action in current.untried_actions:
             next_state = board.next_state(state, action)
@@ -30,20 +30,17 @@ def traverse_nodes(node, board, state, identity):
             expanded_leaf.parent_action = action
             expanded_leaf.untried_actions = board.legal_actions(next_state)
             node.child_nodes[action] = expanded_leaf
-            end_state = rollout(board, next_state)
-            backpropagate(expanded_leaf, board.win_values(end_state)[identity])
-        #no return
-        #return current
+    if len(current.child_nodes) == 0:
+        return current
     # calculate UCT of nodes
     greatest_child = None
     greatest_UCT = 0
-
-    #print("CHILD NODES: ", current.child_nodes.keys())
     #Checking for nonvisited children
     for c in current.child_nodes.values():
         if c.visits == 0: #if not visited want to rollout this one
             #print("return")
             return c
+
     #Using UCT to figure out which child to continue with
     for child in current.child_nodes.values():
         # if child.visits != 0: #expand leaf node
