@@ -158,7 +158,7 @@ def think(board, state):
         #print(tree_size)
         leaf = traverse_nodes(node, board, state, identity_of_bot)
         next_state = board.next_state(state, leaf.parent_action)
-        simulated = rollout(board, state)
+        simulated = rollout(board, next_state)
         score_to_update = board.win_values(simulated)[identity_of_bot]
         total_score += score_to_update
         backpropagate(leaf, score_to_update) #need to update wins correctly
