@@ -4,7 +4,7 @@ from mcts_node import MCTSNode
 from random import choice
 from math import sqrt, log
 
-num_nodes = 1000
+num_nodes = 100
 explore_faction = 2.
 
 def traverse_nodes(node, board, state, identity):
@@ -20,41 +20,36 @@ def traverse_nodes(node, board, state, identity):
 
     """
     current = node
-    #print("Visits ", current.visits)
     if current.visits == 0: #if no children, then add a leaf
-        #print("Child actions: ")
         for action in current.untried_actions:
             next_state = board.next_state(state, action)
             expanded_leaf = expand_leaf(current, board, next_state)
             expanded_leaf.parent_action = action
             expanded_leaf.untried_actions = board.legal_actions(next_state)
             node.child_nodes[action] = expanded_leaf
-            #print("Action: ", action)
     if len(current.child_nodes) == 0:
         return current
-    # calculate UCT of nodes
+
     greatest_child = None
     greatest_UCT = 0
     #Checking for nonvisited children
     for c in current.child_nodes.values():
         if c.visits == 0: #if not visited want to rollout this one
-            #print("return")
             return c
-    #Using UCT to figure out which child to continue with
+
     for child in current.child_nodes.values():
-        # if child.visits != 0: #expand leaf node
-        #     expand_leaf(child, board, state)
-        # UCT = wi/ni + c(sqrt(ln t/ni))
-        # calculate UCT based on identity
         if identity != board.current_player(state):
             current_UCT = child.wins/child.visits + explore_faction * (sqrt(log(current.visits) / child.visits))
         else:
             current_UCT = (1-(child.wins/child.visits)) + explore_faction * (sqrt(log(current.visits) / child.visits))
+        
         if current_UCT > greatest_UCT:
             greatest_child = child
             greatest_UCT = current_UCT
-    #by this point have visited all nodes and have a greatest
-    # if greatest_child.visits > 0:
+
+        if(current_UCT == 0):
+            greatest_child = child
+
     next_state = board.next_state(state, greatest_child.parent_action)
     return traverse_nodes(greatest_child, board, next_state, identity)
     
@@ -83,12 +78,10 @@ def rollout(board, state):
 
     """
     current_state = state #state
-    #play random move until an end state reached
     while not board.is_ended(current_state):
         possible_actions = board.legal_actions(current_state)
         action_to_take = random.choice(possible_actions)
         current_state = board.next_state(current_state, action_to_take)
-    #current state at this point will be an ending state
     return current_state
 
 
@@ -112,8 +105,11 @@ def best_action(node, board, state, identity):
     greatest_UCT = 0
     current_UCT = 0
     greatest_child = None
+
     for child in node.child_nodes.values():
         # UCT = wi/ni + c(sqrt(ln t/ni))
+        if(child.visits == 0):
+            return child.parent_action
         current_UCT = child.wins/child.visits + explore_faction*(sqrt(log(node.visits)/child.visits))
         if current_UCT > greatest_UCT:
             greatest_child = child
@@ -132,9 +128,6 @@ def think(board, state):
 
     """
     identity_of_bot = board.current_player(state)
-    # print("identity_of_bot")
-    # print(identity_of_bot)
-    #print(board.legal_actions(state))
     root_node = MCTSNode(parent=None, parent_action=None, action_list=board.legal_actions(state))
 
     # Copy the game for sampling a playthrough
@@ -155,8 +148,6 @@ def think(board, state):
         total_score += score_to_update
         backpropagate(leaf, score_to_update) #need to update wins correctly
         tree_size += 1
-    # Return an action, typically the most frequently used action (from the root) or the action with the best
-    # estimated win rate.
-    #print(total_score/tree_size)
+
     action_to_take = best_action(node, board, state, identity_of_bot)
     return action_to_take
