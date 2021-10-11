@@ -34,7 +34,7 @@ def traverse_nodes(node, board, state, identity):
     if len(current.child_nodes) == 0:
         return current
     # calculate UCT of nodes
-    greatest_child = None
+    greatest_child = choice(node.child_nodes)
     greatest_UCT = 0
     # Checking for nonvisited children
     for c in current.child_nodes.values():
@@ -115,10 +115,12 @@ def backpropagate(node, won):
 def best_action(node, board, state, identity):
     greatest_UCT = 0
     current_UCT = 0
-    greatest_child = None
+    greatest_child = choice(node.child_nodes)
     for child in node.child_nodes.values():
         # UCT = wi/ni + c(sqrt(ln t/ni))
         current_UCT = child.wins / child.visits + explore_faction * (sqrt(log(node.visits) / child.visits))
+        if child.visits == 0:
+            return child.parent_action
         if current_UCT > greatest_UCT:
             greatest_child = child
             greatest_UCT = current_UCT
