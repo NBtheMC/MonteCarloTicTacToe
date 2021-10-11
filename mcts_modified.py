@@ -1,4 +1,5 @@
 import random
+import time
 
 from mcts_node import MCTSNode
 from random import choice
@@ -34,7 +35,7 @@ def traverse_nodes(node, board, state, identity):
     if len(current.child_nodes) == 0:
         return current
     # calculate UCT of nodes
-    greatest_child = choice(node.child_nodes)
+    greatest_child = None
     greatest_UCT = 0
     # Checking for nonvisited children
     for c in current.child_nodes.values():
@@ -43,8 +44,6 @@ def traverse_nodes(node, board, state, identity):
             return c
     # Using UCT to figure out which child to continue with
     for child in current.child_nodes.values():
-        # if child.visits != 0: #expand leaf node
-        #     expand_leaf(child, board, state)
         # UCT = wi/ni + c(sqrt(ln t/ni))
         # calculate UCT based on identity
         if identity != board.current_player(state):
@@ -72,6 +71,15 @@ def expand_leaf(node, board, state):
     Returns:    The added child node.
 
     """
+
+    # #check too see if nodes are filled
+    # current_state = state
+    # possible_actions = board.legal_actions(current_state)
+    # #print("Possible:", possible_actions)
+    # for action in possible_actions:
+    #     new_node = MCTSNode(node, action, board.legal_actions(board.next_state(state, action)))
+    #     node.child_nodes[action] = new_node
+    # #print("Action:", action_to_take)
     new_node = MCTSNode(node, None, None)
     return new_node
 
@@ -85,11 +93,10 @@ def rollout(board, state):
 
     """
     current_state = state  # state
-    # play best move possible until an end state reached
+    # play random move until an end state reached
     while not board.is_ended(current_state):
-        #heuristic on choosing obviously right nodes
         possible_actions = board.legal_actions(current_state)
-        action_to_take = random.choice(possible_actions)
+        action_to_take = possible_actions[random.randint(0, len(possible_actions) - 1)]
         current_state = board.next_state(current_state, action_to_take)
     # current state at this point will be an ending state
     return current_state
@@ -115,15 +122,25 @@ def backpropagate(node, won):
 def best_action(node, board, state, identity):
     greatest_UCT = 0
     current_UCT = 0
-    greatest_child = choice(node.child_nodes)
+    greatest_child = None
+    owned_boxes = []
+    rowA, rowB, rowC = 0  # amount of pieces in row
+    colA, colB, colC = 0  # amount of pieces in column
+    for box in board.owned_boxes(state):
+        if board.owned_boxes(state)[box] != 0:
+            owned_boxes.append(box)
+
+    #get first obvious move using 
+
+
     for child in node.child_nodes.values():
+        # print("Action", child.parent_action)
         # UCT = wi/ni + c(sqrt(ln t/ni))
         current_UCT = child.wins / child.visits + explore_faction * (sqrt(log(node.visits) / child.visits))
-        if child.visits == 0:
-            return child.parent_action
         if current_UCT > greatest_UCT:
             greatest_child = child
             greatest_UCT = current_UCT
+    print("Chosen: ", greatest_child.parent_action)
     return greatest_child.parent_action
 
 
@@ -149,6 +166,7 @@ def think(board, state):
     node = root_node
 
     # Do MCTS - This is all you!
+    timer = time.time() + 1
     # while tree size, eventually replace with timer
     total_score = 0
     tree_size = 1
