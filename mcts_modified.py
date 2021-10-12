@@ -85,10 +85,8 @@ def rollout(board, state):
         state:  The state of the game.
 
     """
-    # play random move until an end state reached
     current_state = state  # state
     lines = {}
-    found_shortcut = False
     #basically fills out any 3 in a rows from either opponent or self
     while not board.is_ended(current_state):
         #fills out lines of 3 of p1
@@ -98,43 +96,26 @@ def rollout(board, state):
         lines["col0"] = 0
         lines["col1"] = 0
         lines["col2"] = 0
-        lines["dia0"] = 0
-        lines["dia1"] = 0
         for action in board.owned_boxes(current_state):
             if board.owned_boxes(state)[action] == 1:
                 lines["row" + str(action[0])] += 1
                 lines["col" + str(action[1])] += 1
         for action in board.legal_actions(current_state):
-            match action[0]:
-                case 0:
-                    if lines["row0"] == 2:
-                        return action
-                case 1:
-                    if lines["row1"] == 2:
-                        return action
-                case 2:
-                    if lines["row2"] == 2:
-                        return action
-            match action[1]:
-                case 0:
-                    if lines["col0"] == 2:
-                        return action
-                case 1:
-                    if lines["col1"] == 2:
-                        return action
-                case 2:
-                    if lines["col2"] == 2:
-                        return action
-
+            print("Action", action)
+            pick_line()
         #fills out lines of 3 of p2
 
 
         possible_actions = board.legal_actions(current_state)
         action_to_take = possible_actions[random.randint(0, len(possible_actions) - 1)]
         current_state = board.next_state(current_state, action_to_take)
+
     # current state at this point will be an ending state
     return current_state
 
+def pick_line(actions, lines):
+
+    return None
 
 def backpropagate(node, won):
     """ Navigates the tree from a leaf node to the root, updating the win and visit count of each node along the path.

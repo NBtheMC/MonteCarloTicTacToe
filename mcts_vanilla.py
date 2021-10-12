@@ -5,7 +5,7 @@ from mcts_node import MCTSNode
 from random import choice
 from math import sqrt, log
 
-num_nodes = 200
+num_nodes = 100
 explore_faction = 2.
 
 def traverse_nodes(node, board, state, identity):
@@ -21,14 +21,6 @@ def traverse_nodes(node, board, state, identity):
 
     """
     current = node
-    # if current.visits == 0: #if no vists, then add leafs
-    #     for action in current.untried_actions:
-    #         next_state = board.next_state(state, action)
-    #         expanded_leaf = expand_leaf(current, board, next_state)
-    #         expanded_leaf.parent_action = action
-    #         expanded_leaf.untried_actions = board.legal_actions(next_state)
-    #         node.child_nodes[action] = expanded_leaf
-
     greatest_child = None
     greatest_UCT = -math.inf
     #Checking for nonvisited children
@@ -48,8 +40,8 @@ def traverse_nodes(node, board, state, identity):
         if current_UCT > greatest_UCT:
             greatest_child = child
             greatest_UCT = current_UCT
-        # if(current_UCT == 0):
-        #     greatest_child = child
+    if not greatest_child:
+        return (current, state)
     next_state = board.next_state(state, greatest_child.parent_action)
     return traverse_nodes(greatest_child, board, next_state, identity)
     
@@ -108,7 +100,7 @@ def backpropagate(node, won):
     pass
 
 def best_action(node, board, state, identity):
-    greatest_winrate = 0
+    greatest_winrate = -math.inf
     current_winrate = 0
     greatest_child = None
 
@@ -140,11 +132,13 @@ def think(board, state):
     sampled_game = state
     # Start at root
     node = root_node
-
+    node_amount = num_nodes
+    if identity_of_bot == 1:
+        node_amount = 200
     # Do MCTS - This is all you!
     #while tree size, eventually replace with timer
     tree_size = 1
-    while tree_size < num_nodes:
+    while tree_size < node_amount:
         #print(tree_size)
         new_leaf, new_state = traverse_nodes(node, board, state, identity_of_bot) #add state for current layer
         #expand leaf here
