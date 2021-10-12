@@ -1,10 +1,11 @@
+import math
 import random
 
 from mcts_node import MCTSNode
 from random import choice
 from math import sqrt, log
 
-num_nodes = 100
+num_nodes = 200
 explore_faction = 2.
 
 def traverse_nodes(node, board, state, identity):
@@ -29,7 +30,7 @@ def traverse_nodes(node, board, state, identity):
     #         node.child_nodes[action] = expanded_leaf
 
     greatest_child = None
-    greatest_UCT = 0
+    greatest_UCT = -math.inf
     #Checking for nonvisited children
     # for c in current.child_nodes.values():
     #     if c.visits == 0: #if not visited want to rollout this one
@@ -49,7 +50,6 @@ def traverse_nodes(node, board, state, identity):
             greatest_UCT = current_UCT
         # if(current_UCT == 0):
         #     greatest_child = child
-
     next_state = board.next_state(state, greatest_child.parent_action)
     return traverse_nodes(greatest_child, board, next_state, identity)
     
@@ -143,7 +143,6 @@ def think(board, state):
 
     # Do MCTS - This is all you!
     #while tree size, eventually replace with timer
-    total_score = 0
     tree_size = 1
     while tree_size < num_nodes:
         #print(tree_size)
@@ -153,7 +152,6 @@ def think(board, state):
         #next_state = board.next_state(state, leaf.parent_action)
         simulated = rollout(board, new_state) #use state returned from expand leaf
         score_to_update = board.win_values(simulated)[identity_of_bot]
-        total_score += score_to_update
         backpropagate(new_node, score_to_update) #need to update wins correctly
         tree_size += 1
 

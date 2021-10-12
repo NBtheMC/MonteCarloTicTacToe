@@ -1,11 +1,10 @@
 import random
-import time
 
 from mcts_node import MCTSNode
 from random import choice
 from math import sqrt, log
 
-num_nodes = 1000
+num_nodes = 100
 explore_faction = 2.
 
 
@@ -22,40 +21,37 @@ def traverse_nodes(node, board, state, identity):
 
     """
     current = node
-    # print("Visits ", current.visits)
-    if current.visits == 0:  # if no children, then add a leaf
-        # print("Child actions: ")
-        for action in current.untried_actions:
-            next_state = board.next_state(state, action)
-            expanded_leaf = expand_leaf(current, board, next_state)
-            expanded_leaf.parent_action = action
-            expanded_leaf.untried_actions = board.legal_actions(next_state)
-            node.child_nodes[action] = expanded_leaf
-            # print("Action: ", action)
-    if len(current.child_nodes) == 0:
-        return current
-    # calculate UCT of nodes
+    # if current.visits == 0: #if no vists, then add leafs
+    #     for action in current.untried_actions:
+    #         next_state = board.next_state(state, action)
+    #         expanded_leaf = expand_leaf(current, board, next_state)
+    #         expanded_leaf.parent_action = action
+    #         expanded_leaf.untried_actions = board.legal_actions(next_state)
+    #         node.child_nodes[action] = expanded_leaf
+
     greatest_child = None
     greatest_UCT = 0
     # Checking for nonvisited children
-    for c in current.child_nodes.values():
-        if c.visits == 0:  # if not visited want to rollout this one
-            # print("return")
-            return c
-    # Using UCT to figure out which child to continue with
+    # for c in current.child_nodes.values():
+    #     if c.visits == 0: #if not visited want to rollout this one
+    #         return c
+    if current.untried_actions:
+        return (current, state)
+    if len(current.child_nodes) == 0:
+        return (current, state)
     for child in current.child_nodes.values():
-        # UCT = wi/ni + c(sqrt(ln t/ni))
-        # calculate UCT based on identity
-        if identity != board.current_player(state):
+        if identity == board.current_player(state):
             current_UCT = child.wins / child.visits + explore_faction * (sqrt(log(current.visits) / child.visits))
         else:
             current_UCT = (1 - (child.wins / child.visits)) + explore_faction * (
                 sqrt(log(current.visits) / child.visits))
+
         if current_UCT > greatest_UCT:
             greatest_child = child
             greatest_UCT = current_UCT
-    # by this point have visited all nodes and have a greatest
-    # if greatest_child.visits > 0:
+        # if(current_UCT == 0):
+        #     greatest_child = child
+
     next_state = board.next_state(state, greatest_child.parent_action)
     return traverse_nodes(greatest_child, board, next_state, identity)
 
@@ -71,17 +67,14 @@ def expand_leaf(node, board, state):
     Returns:    The added child node.
 
     """
-
-    # #check too see if nodes are filled
-    # current_state = state
-    # possible_actions = board.legal_actions(current_state)
-    # #print("Possible:", possible_actions)
-    # for action in possible_actions:
-    #     new_node = MCTSNode(node, action, board.legal_actions(board.next_state(state, action)))
-    #     node.child_nodes[action] = new_node
-    # #print("Action:", action_to_take)
-    new_node = MCTSNode(node, None, None)
-    return new_node
+    if not node.untried_actions:
+        return node, state
+    random_action = choice(node.untried_actions)
+    new_state = board.next_state(state, random_action)
+    new_node = MCTSNode(node, random_action, board.legal_actions(new_state))
+    node.child_nodes[random_action] = new_node
+    node.untried_actions.remove(random_action)
+    return new_node, new_state
 
 
 def rollout(board, state):
@@ -92,9 +85,50 @@ def rollout(board, state):
         state:  The state of the game.
 
     """
-    current_state = state  # state
     # play random move until an end state reached
+    current_state = state  # state
+    lines = {}
+    found_shortcut = False
+    #basically fills out any 3 in a rows from either opponent or self
     while not board.is_ended(current_state):
+        #fills out lines of 3 of p1
+        lines["row0"] = 0
+        lines["row1"] = 0
+        lines["row2"] = 0
+        lines["col0"] = 0
+        lines["col1"] = 0
+        lines["col2"] = 0
+        lines["dia0"] = 0
+        lines["dia1"] = 0
+        for action in board.owned_boxes(current_state):
+            if board.owned_boxes(state)[action] == 1:
+                lines["row" + str(action[0])] += 1
+                lines["col" + str(action[1])] += 1
+        for action in board.legal_actions(current_state):
+            match action[0]:
+                case 0:
+                    if lines["row0"] == 2:
+                        return action
+                case 1:
+                    if lines["row1"] == 2:
+                        return action
+                case 2:
+                    if lines["row2"] == 2:
+                        return action
+            match action[1]:
+                case 0:
+                    if lines["col0"] == 2:
+                        return action
+                case 1:
+                    if lines["col1"] == 2:
+                        return action
+                case 2:
+                    if lines["col2"] == 2:
+                        return action
+
+        #fills out lines of 3 of p2
+
+
         possible_actions = board.legal_actions(current_state)
         action_to_take = possible_actions[random.randint(0, len(possible_actions) - 1)]
         current_state = board.next_state(current_state, action_to_take)
@@ -120,34 +154,18 @@ def backpropagate(node, won):
 
 
 def best_action(node, board, state, identity):
-    greatest_UCT = 0
-    current_UCT = 0
+    greatest_winrate = 0
+    current_winrate = 0
     greatest_child = None
-    lines = {}
-    lines["rowA"] = 0
-    lines["rowB"] = 0
-    lines["rowC"] = 0
-    lines["colA"] = 0
-    lines["colB"] = 0
-    lines["colC"] = 0
-    rowA, rowB, rowC = 0  # amount of pieces in row
-    colA, colB, colC = 0  # amount of pieces in column
-    for box in board.owned_boxes(state):
-        if board.owned_boxes(state)[box] != 0:
-            lines[box[0]] += 1
-
-
-    #get first obvious move using
-
 
     for child in node.child_nodes.values():
-        # print("Action", child.parent_action)
         # UCT = wi/ni + c(sqrt(ln t/ni))
-        current_UCT = child.wins / child.visits + explore_faction * (sqrt(log(node.visits) / child.visits))
-        if current_UCT > greatest_UCT:
+        # if(child.visits == 0):
+        #     return child.parent_action
+        current_winrate = child.wins / child.visits
+        if current_winrate > greatest_winrate:
             greatest_child = child
-            greatest_UCT = current_UCT
-    print("Chosen: ", greatest_child.parent_action)
+            greatest_winrate = current_winrate
     return greatest_child.parent_action
 
 
@@ -162,9 +180,6 @@ def think(board, state):
 
     """
     identity_of_bot = board.current_player(state)
-    # print("identity_of_bot")
-    # print(identity_of_bot)
-    # print(board.legal_actions(state))
     root_node = MCTSNode(parent=None, parent_action=None, action_list=board.legal_actions(state))
 
     # Copy the game for sampling a playthrough
@@ -173,21 +188,20 @@ def think(board, state):
     node = root_node
 
     # Do MCTS - This is all you!
-    timer = time.time() + 1
     # while tree size, eventually replace with timer
     total_score = 0
     tree_size = 1
     while tree_size < num_nodes:
         # print(tree_size)
-        leaf = traverse_nodes(node, board, state, identity_of_bot)
-        next_state = board.next_state(state, leaf.parent_action)
-        simulated = rollout(board, next_state)
+        new_leaf, new_state = traverse_nodes(node, board, state, identity_of_bot)  # add state for current layer
+        # expand leaf here
+        new_node, new_state = expand_leaf(new_leaf, board, new_state)
+        # next_state = board.next_state(state, leaf.parent_action)
+        simulated = rollout(board, new_state)  # use state returned from expand leaf
         score_to_update = board.win_values(simulated)[identity_of_bot]
         total_score += score_to_update
-        backpropagate(leaf, score_to_update)  # need to update wins correctly
+        backpropagate(new_node, score_to_update)  # need to update wins correctly
         tree_size += 1
-    # Return an action, typically the most frequently used action (from the root) or the action with the best
-    # estimated win rate.
-    # print(total_score/tree_size)
+
     action_to_take = best_action(node, board, state, identity_of_bot)
     return action_to_take
