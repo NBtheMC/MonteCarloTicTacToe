@@ -4,7 +4,7 @@ from mcts_node import MCTSNode
 from random import choice
 from math import sqrt, log
 
-num_nodes = 100
+num_nodes = 200
 explore_faction = 2.
 
 
@@ -87,6 +87,7 @@ def rollout(board, state):
     """
     current_state = state  # state
     lines = {}
+    shortcut_found = False
     #basically fills out any 3 in a rows from either opponent or self
     while not board.is_ended(current_state):
         #fills out lines of 3 of p1
@@ -101,21 +102,55 @@ def rollout(board, state):
                 lines["row" + str(action[0])] += 1
                 lines["col" + str(action[1])] += 1
         for action in board.legal_actions(current_state):
-            print("Action", action)
-            pick_line()
+            #print("Action", action)
+            if will_complete(action, lines):
+                action_to_take = action
+                current_state = board.next_state(current_state, action_to_take)
+                shortcut_found = True
+        # fills out lines of 3 of p2
+        lines["row0"] = 0
+        lines["row1"] = 0
+        lines["row2"] = 0
+        lines["col0"] = 0
+        lines["col1"] = 0
+        lines["col2"] = 0
+        for action in board.owned_boxes(current_state):
+            if board.owned_boxes(state)[action] == 2:
+                lines["row" + str(action[0])] += 1
+                lines["col" + str(action[1])] += 1
+        for action in board.legal_actions(current_state):
+            # print("Action", action)
+            if will_complete(action, lines):
+                action_to_take = action
+                current_state = board.next_state(current_state, action_to_take)
+                shortcut_found = True
+
         #fills out lines of 3 of p2
-
-
-        possible_actions = board.legal_actions(current_state)
-        action_to_take = possible_actions[random.randint(0, len(possible_actions) - 1)]
-        current_state = board.next_state(current_state, action_to_take)
-
+        if not shortcut_found:
+            possible_actions = board.legal_actions(current_state)
+            action_to_take = possible_actions[random.randint(0, len(possible_actions) - 1)]
+            current_state = board.next_state(current_state, action_to_take)
+        shortcut_found = False
     # current state at this point will be an ending state
     return current_state
 
-def pick_line(actions, lines):
 
-    return None
+def will_complete(action, lines):
+    rows = {
+        0: lines["row0"],
+        1: lines["row1"],
+        2: lines["row2"],
+    }
+    if rows.get(action[0]) == 2:
+        return True
+    cols = {
+        0: lines["col0"],
+        1: lines["col1"],
+        2: lines["col2"],
+    }
+    if cols.get(action[1]) == 2:
+        return True
+    return False
 
 def backpropagate(node, won):
     """ Navigates the tree from a leaf node to the root, updating the win and visit count of each node along the path.
