@@ -123,14 +123,21 @@ def best_action(node, board, state, identity):
     greatest_UCT = 0
     current_UCT = 0
     greatest_child = None
-    owned_boxes = []
+    lines = {}
+    lines["rowA"] = 0
+    lines["rowB"] = 0
+    lines["rowC"] = 0
+    lines["colA"] = 0
+    lines["colB"] = 0
+    lines["colC"] = 0
     rowA, rowB, rowC = 0  # amount of pieces in row
     colA, colB, colC = 0  # amount of pieces in column
     for box in board.owned_boxes(state):
         if board.owned_boxes(state)[box] != 0:
-            owned_boxes.append(box)
+            lines[box[0]] += 1
 
-    #get first obvious move using 
+
+    #get first obvious move using
 
 
     for child in node.child_nodes.values():
