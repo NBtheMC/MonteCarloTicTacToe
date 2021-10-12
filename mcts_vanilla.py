@@ -1,5 +1,6 @@
 import math
 import random
+import time
 
 from mcts_node import MCTSNode
 from random import choice
@@ -138,7 +139,10 @@ def think(board, state):
     # Do MCTS - This is all you!
     #while tree size, eventually replace with timer
     tree_size = 1
-    while tree_size < node_amount:
+
+    # timer = 0.1 + time.time()
+    # while time.time() < timer:
+    while tree_size < num_nodes:
         #print(tree_size)
         new_leaf, new_state = traverse_nodes(node, board, state, identity_of_bot) #add state for current layer
         #expand leaf here
@@ -148,6 +152,6 @@ def think(board, state):
         score_to_update = board.win_values(simulated)[identity_of_bot]
         backpropagate(new_node, score_to_update) #need to update wins correctly
         tree_size += 1
-
+    #print(tree_size)
     action_to_take = best_action(node, board, state, identity_of_bot)
     return action_to_take
