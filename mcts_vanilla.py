@@ -134,8 +134,8 @@ def think(board, state):
     # Start at root
     node = root_node
     node_amount = num_nodes
-    if identity_of_bot == 1:
-        node_amount = 200
+    # if identity_of_bot == 1:
+    #     node_amount = 200
     # Do MCTS - This is all you!
     #while tree size, eventually replace with timer
     tree_size = 1
